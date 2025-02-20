@@ -1,0 +1,107 @@
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+import datetime
+
+app = Flask(__name__)
+
+# Configure SQLite database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todos.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize SQLAlchemy
+db = SQLAlchemy(app)
+
+# Define Todo model
+class Todo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(500), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    completed = db.Column(db.Boolean, default=False)
+
+# Create database tables
+with app.app_context():
+    db.create_all()
+
+# GET all todos
+@app.route('/todos', methods=['GET'])
+def get_todos():
+    todos = Todo.query.all()
+    return jsonify({'todos': [todo_to_dict(todo) for todo in todos]}), 200
+
+# GET a specific todo by ID
+@app.route('/todos/<int:todo_id>', methods=['GET'])
+def get_todo(todo_id):
+    todo = Todo.query.get(todo_id)
+    if todo is None:
+        return jsonify({'error': 'Todo not found'}), 404
+    return jsonify({'todo': todo_to_dict(todo)}), 200
+
+# POST - Create a new todo
+@app.route('/todos', methods=['POST'])
+def create_todo():
+    data = request.get_json()
+    
+    if not data or 'title' not in data:
+        return jsonify({'error': 'Title is required'}), 400
+    
+    todo = Todo(
+        title=data['title'],
+        description=data.get('description', ''),
+        completed=False
+    )
+    
+    db.session.add(todo)
+    db.session.commit()
+    return jsonify({'todo': todo_to_dict(todo)}), 201
+
+# PUT - Update a todo
+@app.route('/todos/<int:todo_id>', methods=['PUT'])
+def update_todo(todo_id):
+    todo = Todo.query.get(todo_id)
+    if todo is None:
+        return jsonify({'error': 'Todo not found'}), 404
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    todo.title = data.get('title', todo.title)
+    todo.description = data.get('description', todo.description)
+    todo.completed = data.get('completed', todo.completed)
+    
+    db.session.commit()
+    return jsonify({'todo': todo_to_dict(todo)}), 200
+
+# DELETE - Delete a todo
+@app.route('/todos/<int:todo_id>', methods=['DELETE'])
+def delete_todo(todo_id):
+    todo = Todo.query.get(todo_id)
+    if todo is None:
+        return jsonify({'error': 'Todo not found'}), 404
+    
+    db.session.delete(todo)
+    db.session.commit()
+    return '', 204
+
+# Helper function to convert Todo object to dictionary
+def todo_to_dict(todo):
+    return {
+        'id': todo.id,
+        'title': todo.title,
+        'description': todo.description,
+        'created_at': todo.created_at.isoformat(),
+        'completed': todo.completed
+    }
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Not found'}), 404
+
+@app.errorhandler(400)
+def bad_request(error):
+    return jsonify({'error': 'Bad request'}), 400
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)

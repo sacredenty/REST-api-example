@@ -1,4 +1,20 @@
 # REST-api-example
+Here are some example API calls you can make:
+Create a new todo (POST):
+bash
+curl -X POST -H "Content-Type: application/json" -d '{"title":"Buy milk","description":"Get 2 cartons"}' http://localhost:5000/todos
+Get all todos (GET):
+bash
+curl http://localhost:5000/todos
+Get a specific todo (GET):
+bash
+curl http://localhost:5000/todos/1
+Update a todo (PUT):
+bash
+curl -X PUT -H "Content-Type: application/json" -d '{"completed":true}' http://localhost:5000/todos/1
+Delete a todo (DELETE):
+bash
+curl -X DELETE http://localhost:5000/todo
 This API includes:
 Proper HTTP status codes (200, 201, 400, 404, etc.)
 JSON responses

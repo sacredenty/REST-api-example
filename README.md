@@ -6,7 +6,7 @@ Basic error handling
 CRUD operations
 RESTful routing
 Features:
-Uses an in-memory dictionary for storage (in production, you'd want a real database)
+Uses SQL alchemy for db
 Includes timestamps for todo creation
 Supports title, description, and completion status
 Auto-incrementing IDs
